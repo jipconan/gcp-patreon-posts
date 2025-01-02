@@ -26,6 +26,6 @@ The application performs several key functions:
 
 This Google Cloud Function is triggered on a set schedule using Cloud Scheduler, capturing the latest campaign content daily. Users can customize the posting schedule by updating the configuration in the Google Cloud Console.
 
-## Functionality
+## Setup
 
 I will update it soon!
