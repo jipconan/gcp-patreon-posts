@@ -23,8 +23,8 @@ def main():
     try:
         logging.info("Function triggered.")
 
-        # Fetch posts from Patreon
-        same_day_posts = fetch_posts()
+        # Fetch posts from Patreon fetch_posts(days) function
+        same_day_posts = fetch_posts(1)
         if same_day_posts:
             logging.info(f"Fetched posts: {same_day_posts}")
 
@@ -53,5 +53,5 @@ def main():
         return jsonify({"error": str(e)}), 500
 
 # Run Flask locally
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
