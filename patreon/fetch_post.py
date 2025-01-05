@@ -8,53 +8,55 @@ load_dotenv("patreon/.env")
 # Singapore time zone offset
 SINGAPORE_TZ = timezone(timedelta(hours=8))
 
-# Function to fetch today's posts from Patreon
-def fetch_posts(period=datetime.now(SINGAPORE_TZ).date()):
+# Function to fetch posts from Patreon
+def fetch_posts(days):
+    # Load the access token and campaign ID from the environment variables
     access_token = os.getenv("PATRON_API_KEY")
     campaign_id = os.getenv("PATRON_CAMPAIGN_ID")
-    # print("access_token:", access_token)
 
-    # Make an API call to get today's posts
-    response = requests.get(
-        f"https://www.patreon.com/api/oauth2/v2/campaigns/{campaign_id}/posts?page%5Bcount%5D=10&sort=-published_at",
-        headers={"Authorization": f"Bearer {access_token}"},
-        params={"fields[post]": "title,content,published_at,url"}
-    )
-    while "next" in response.json().get('links', []):
-        response = requests.get(
-        response.json().get('links', [])["next"],
-        headers={"Authorization": f"Bearer {access_token}"},
-        params={"fields[post]": "title,content,published_at,url"}
-    )
+    # Define the date range for the past 3 days
+    today = datetime.now(SINGAPORE_TZ).date()
+    days_ago = today - timedelta(days)
 
-    # Log Singapore Date Time
-    # print("Period date (Singapore Time):", period)
-    
-    if response.status_code != 200:
-        raise Exception(f"Failed to fetch posts: {response.content}")
+    # Initial API call to get the first page of posts
+    url = f"https://www.patreon.com/api/oauth2/v2/campaigns/{campaign_id}/posts?page%5Bcount%5D=10&sort=-published_at"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"fields[post]": "title,content,published_at,url"}
 
-    posts = response.json().get('data', [])
+    posts = []  # To store all posts
 
-    print(response.json().get('links', []))
-    print(posts[0]['attributes']['published_at'])
-    # Filter posts published today and extract necessary fields
-    today_posts = []
+    while url:
+        response = requests.get(url, headers=headers, params=params)
+        
+        # Check if the request was successful
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch posts: {response.content}")
+
+        # Add current page's posts to the list
+        data = response.json()
+        posts.extend(data.get('data', []))
+        
+        # Get the next page link, if available
+        url = data.get('links', {}).get('next', None)
+
+    # Filter posts published within the specified date range
+    fetched_posts = []
+
     for post in posts:
+        # Get the published date in UTC
         published_at_utc = post['attributes']['published_at']
         # Parse the UTC time
         published_at = datetime.fromisoformat(published_at_utc).replace(tzinfo=timezone.utc)
         # Convert to Singapore time
         published_at_sg = published_at.astimezone(SINGAPORE_TZ).date()
         
-        # Log the publish date in Singapore time
-        # print("Post Publish Date (Singapore Time):", published_at_sg)
-        
-        # Check if the post was published today in Singapore time
-        if published_at_sg == period:
-            today_posts.append({
+        # Check if the post was published within the range
+        if days_ago <= published_at_sg <= today:
+            fetched_posts.append({
                 'title': post['attributes'].get('title'),
                 'content': post['attributes'].get('content'),
-                'url': post['attributes'].get('url')
+                'url': post['attributes'].get('url'),
+                'published_at': str(published_at_sg)
             })
     
-    return today_posts
+    return fetched_posts
