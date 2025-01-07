@@ -23,8 +23,8 @@ def main():
     try:
         logging.info("Function triggered.")
 
-        # Fetch posts from Patreon fetch_posts(days) function
-        same_day_posts = fetch_posts(1)
+        # Fetch posts from Patreon fetch_posts(past "" days) function
+        same_day_posts = fetch_posts(0)
         if same_day_posts:
             logging.info(f"Fetched posts: {same_day_posts}")
 
